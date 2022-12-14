@@ -1,0 +1,205 @@
+---
+title: "Quality Control"
+output: 
+  html_document: 
+    toc: yes
+    fig_width: 6
+    df_print: kable
+    fig_height: 6
+date: "`r Sys.Date()`"
+editor_options: 
+  chunk_output_type: inline
+---
+
+**package insatallation**
+
+```{r, echo=T, message=FALSE} 
+library(methylKit)
+library(ggplot2)
+```
+
+
+### Script that evaluated on CLUSTER
+```{r, eval = F}
+# library(methylKit)
+# 
+# setwd('../bam_M_lm_at_3')
+# 
+# ls_files = as.list(list.files('./'))
+# 
+# print(ls_files)
+# 
+# myobj <- processBismarkAln(ls_files, sample.id = list("AtF3-1","AtF3-2","AtF3-3",
+#                                                      "LMF3-1", 'LMF3-2', 'LMF3-3'),
+#                                                       treatment = c(1,1,1,0,0,0), assembly = 'atf_vs_lmf_3', mincov=1)
+# 
+# obj_tiled = tileMethylCounts(myobj, win.size = 1000, step.size = 500, mc.cores = 32, cov.bases = 0)
+# 
+# myobj.norm <- normalizeCoverage(obj_tiled, method = "median")
+# 
+# meth_1l=unite(myobj.norm, destrand=FALSE, min.per.group=1L)
+# meth_2l=unite(myobj.norm, destrand=FALSE, min.per.group=2L)
+# meth_3l=unite(myobj.norm, destrand=FALSE, min.per.group=3L)
+# 
+# cal_meth_1l <- calculateDiffMeth(meth_1l, adjust="fdr", mc.cores = 32)
+# cal_meth_2l <- calculateDiffMeth(meth_2l, adjust="fdr", mc.cores = 32)
+# cal_meth_3l <- calculateDiffMeth(meth_3l, adjust="fdr", mc.cores = 32)
+# 
+# de_meth_1l <- getMethylDiff(cal_meth_1l, qvalue = 0.01)
+# de_meth_2l <- getMethylDiff(cal_meth_2l, qvalue = 0.01)
+# de_meth_3l <- getMethylDiff(cal_meth_3l, qvalue = 0.01)
+# 
+# print(de_meth_1l)
+# print(de_meth_2l)
+# print(de_meth_3l)
+# 
+# write.csv(de_meth_1l, '../table_atf_vs_lmf_3_1l_1000_step_500.csv')
+# write.csv(de_meth_2l, '../table_atf_vs_lmf_3_2l_1000_step_500.csv')
+# write.csv(de_meth_3l, '../table_atf_vs_lmf_3_3l_1000_step_500.csv')
+# save.image('../meth_kit_atf_vs_lmf.RData')
+```
+
+
+```{r, echo=F}
+setwd('~/R/Fusarium_Flax/DE_Methyl/')
+load('meth_kit_atf_vs_lmf.RData')
+```
+
+
+### MBias plots:
+
+Charaterisctic of **reads**. Shows mean methylation percentage in every position
+
+**Function for reading files**
+```{r}
+read_mbias <- function(sample_name, R){
+chg = read.table(paste('M', sample_name ,'_pe.CHG.(',R ,').M-bias.txt', sep = ''),
+                 skip = 2, comment.char = '%', header = T)
+
+chh = read.table(paste('M', sample_name ,'_pe.CHH.(',R ,').M-bias.txt', sep = ''),
+                 skip = 2, comment.char = '%', header = T)
+
+cpg = read.table(paste('M', sample_name ,'_pe.CpG.(',R ,').M-bias.txt', sep = ''),
+                 skip = 2, comment.char = '%', header = T)
+return(list(chg, chh, cpg, sample_name, R))
+}
+```
+
+**Function for plotting**
+```{r}
+mbias_plot <-  function(list_data){
+ggplot() + 
+  geom_line(data = list_data[[1]], aes(x = position, y=count.1, col = 'red')) +
+  geom_line(data = list_data[[2]], aes(x = position, y=count.1, col = 'blue')) +
+  geom_line(data = list_data[[3]], aes(x = position, y=count.1, col = 'green')) +
+  geom_smooth(data = list_data[[1]], aes(x = position, y=count.1, col = 'red')) +
+  geom_smooth(data = list_data[[2]], aes(x = position, y=count.1, col = 'blue')) +
+  geom_smooth(data = list_data[[3]], aes(x = position, y=count.1, col = 'green')) +
+  scale_color_manual(values = c('red', 'blue', 'green'), name="Position", 
+                     labels=c('CHG','CHH','CpG')) +
+  labs(title = paste(list_data[[4]], list_data[[5]], 'methylation percentage per postion'),
+      x = 'sites', y = 'Methylation (%)')
+}
+```
+
+```{r warning=FALSE, echo=F}
+setwd('./mbias_lmf_atf_3/')
+
+meth_atf1_r1 = read_mbias('AtF3-1', 'R1')
+meth_atf2_r1 = read_mbias('AtF3-2', 'R1')
+meth_atf3_r1 = read_mbias('AtF3-3', 'R1')
+
+meth_atf1_r2 = read_mbias('AtF3-1', 'R2')
+meth_atf2_r2 = read_mbias('AtF3-2', 'R2')
+meth_atf3_r2 = read_mbias('AtF3-3', 'R2')
+
+meth_lmf1_r1 = read_mbias('LMF3-1', 'R1')
+meth_lmf2_r1 = read_mbias('LMF3-2', 'R1')
+meth_lmf4_r1 = read_mbias('LMF3-4', 'R1')
+
+meth_lmf1_r2 = read_mbias('LMF3-1', 'R2')
+meth_lmf2_r2 = read_mbias('LMF3-2', 'R2')
+meth_lmf4_r2 = read_mbias('LMF3-4', 'R2')
+```
+
+#### Plots for each raeds library (ecah replicate, forward and reverse)
+```{r echo=FALSE, fig.height=5, fig.width=6, message=FALSE, warning=FALSE}
+mbias_plot(meth_atf1_r1)
+mbias_plot(meth_atf1_r2)
+
+mbias_plot(meth_atf2_r1)
+mbias_plot(meth_atf2_r2)
+
+mbias_plot(meth_atf3_r1)
+mbias_plot(meth_atf3_r2)
+
+mbias_plot(meth_lmf1_r1)
+mbias_plot(meth_lmf1_r2)
+
+mbias_plot(meth_lmf2_r1)
+mbias_plot(meth_lmf2_r2)
+
+mbias_plot(meth_lmf4_r1)
+mbias_plot(meth_lmf4_r2)
+```
+
+### Percentage of methylation
+
+```{r echo=FALSE, fig.height=5.5, fig.width=6}
+for (i in 1:6) {
+  getMethylationStats(myobj.norm[[i]],plot=T,both.strands=FALSE, labels = T)
+}
+```
+
+### Correlation
+
+#### _For uniting 3 replicates_
+```{r, echo=FALSE, warning=FALSE, fig.height=8, fig.width=10}
+getCorrelation(meth_3l ,plot=T, method = 'spearman')
+```
+
+#### _For uniting 2 replicates - same plot_
+```{r, echo=FALSE, warning=FALSE, fig.height=8, fig.width=10}
+getCorrelation(meth_2l ,plot=F, method = 'spearman')
+```
+
+#### _For uniting 1 replicate - same plot_
+```{r, echo=FALSE, warning=FALSE, fig.height=8, fig.width=10}
+getCorrelation(meth_1l ,plot=F, method = 'spearman')
+```
+
+### Looking through clusterization depending on correlation 
+
+#### _For uniting 3 replicates - same_
+```{r echo=FALSE, message=FALSE}
+clusterSamples(meth_3l, dist="euclidean", method="centroid", plot=TRUE)
+```
+
+#### _For uniting 2 replicates - same_
+```{r, echo=FALSE, eval=FALSE}
+clusterSamples(meth_2l, dist="euclidean", method="centroid", plot=TRUE)
+```
+
+#### _For uniting 1 replicates -same_
+```{r, echo=FALSE, eval=FALSE}
+clusterSamples(meth_1l, dist="euclidean", method="centroid", plot=TRUE)
+```
+**I think it have no sense, because of its shifted distribution**
+
+### Let's see PCA
+
+
+####  _For uniting 3 replicates_
+```{r echo=FALSE, fig.height=4, fig.width=5}
+PCASamples(meth_3l)
+```
+
+#### _For uniting 2 replicates - same_
+```{r echo=FALSE, fig.height=4, fig.width=5, eval=FALSE}
+PCASamples(meth_2l)
+```
+
+#### _For uniting 1 replicates - same_
+```{r echo=FALSE, fig.height=4, fig.width=5,eval=FALSE}
+PCASamples(meth_1l)
+```
