@@ -1,5 +1,4 @@
 library(methylKit)
-#load('meth_kit.RData')
 
 setwd('./bam_M_lm_at_3')
 
@@ -8,19 +7,12 @@ ls_files = as.list(list.files('./'))
 print(ls_files)
 
 myobj <- processBismarkAln(ls_files, sample.id = list("AtF3-1","AtF3-2","AtF3-3",
-                                                     "LMF3-1", 'LMF3-2', 'LMF3-3'),                          
-						      treatment = c(1,1,1,0,0,0), assembly = 'atf_vs_lmf_3', mincov=1)
+                                                     "LMF3-1", 'LMF3-2', 'LMF3-3'), read.context = 'CHG',
+                                                      treatment = c(1,1,1,0,0,0), assembly = 'atf_vs_lmf_3', mincov=1)
 
 obj_tiled = tileMethylCounts(myobj, win.size = 1000, step.size = 500, mc.cores = 32, cov.bases = 0)
 
-#myobj.filt <- filterByCoverage(myobj,
-#				lo.count=NULL,
-#                      		lo.perc=NULL,
-#                     		hi.count=NULL,
-#                      		hi.perc=NULL)
-
 myobj.norm <- normalizeCoverage(obj_tiled, method = "median")
-#myobj.norm <- normalizeCoverage(myobj, method = "median")
 
 meth_1l=unite(myobj.norm, destrand=FALSE, min.per.group=1L)
 meth_2l=unite(myobj.norm, destrand=FALSE, min.per.group=2L)
@@ -38,7 +30,7 @@ print(de_meth_1l)
 print(de_meth_2l)
 print(de_meth_3l)
 
-write.csv(de_meth_1l, '../table_atf_vs_lmf_3_1l_1000_step_500.csv')
-write.csv(de_meth_2l, '../table_atf_vs_lmf_3_2l_1000_step_500.csv')
-write.csv(de_meth_3l, '../table_atf_vs_lmf_3_3l_1000_step_500.csv')
-save.image('../meth_kit_atf_vs_lmf.RData')
+write.csv(de_meth_1l, '../table_atf_vs_lmf_3_chg_1l_1000_step_500.csv')
+write.csv(de_meth_2l, '../table_atf_vs_lmf_3_chg_2l_1000_step_500.csv')
+write.csv(de_meth_3l, '../table_atf_vs_lmf_3_chg_3l_1000_step_500.csv')
+save.image('../meth_kit_atf_vs_lmf_chg.RData')
