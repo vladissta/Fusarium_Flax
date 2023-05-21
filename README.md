@@ -124,7 +124,7 @@ Main enriched GO terms found AtF5 vs. AtF3 contrast connected with:
 
 The important terms found AtF3 vs. AtK3 contrast associated with the same functions with addition of terms of **carbohydrates metabolism**.  
 
-![hm_dmr](Heatmaps/dmr_go.pdf)
+![hm_dmr](Heatmaps/dmr_go.png)
 
 Few enriched Plant Reactome terms were found. They denoted the synthesis of some protective agents (e.g. momilactones)
 
@@ -196,7 +196,7 @@ Atalante variety had strong specific response to infection on 3rd dpi. The main 
 * **Endopeptidase inhibitors**
 * **Hydrolysis of polysaccharides**
 
-![hm_de_lu](Heatmaps/de_go_Atalante.pdf)
+![hm_de_lu](Heatmaps/de_go_Atalante.png)
 
 <table>
 <thead>
@@ -241,7 +241,7 @@ On the 5th dpi terms were associated with:
 * **Carbohydrates metabolism**
 * **Response to oxidative stress**
 
-![hm_de_fo](Heatmaps/de_go_FO.pdf)
+![hm_de_fo](Heatmaps/de_go_FO.png)
 
 ### Integrative analysis
 
@@ -249,7 +249,7 @@ After intersection of DEG and genes associated with DMR we found **no common gen
 
 There were enough common genes obtained for AtF3 vs. AtK3 and AtF5 vs. AtF3 for subsequent annotation enrichment analysis. The same terms found for these contrasts were connected with **response to oxidative stress** (specific enzymes activity and ion binding). Also, infected Atalante compared to control on the 3rd dpi differs with terms associated with **polysaccharides metabolism** and **kinases activity**
 
-![hm_common](Heatmaps/common.pdf)
+![hm_common](Heatmaps/common.png)
 
 ## Conclusion
 
