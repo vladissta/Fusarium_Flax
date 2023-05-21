@@ -1,7 +1,7 @@
 ![R](https://img.shields.io/badge/>=4.1.2-blue?style=for-the-badge&logo=r)
 ![bash](https://img.shields.io/badge/Bash-black?style=for-the-badge&logo=gnu-bash)
 
-# Parasite-host interaction in Fusarium infection of flax
+# Host-parasite interaction in Fusarium infection of flax
 
 **NB!** We did not uploaded part of our data, because it will be used in our future work and published later as a part of article.
 
@@ -14,7 +14,7 @@ Our ain is to study the regulation of expression of genes responsible for the mo
 
 **Objectives:**  
 
-* RNA and DNA sequencing data processing
+* RNA-seq and BS-seq sequencing data processing
 	* Alignment of reads to the reference genome
 	* Filtering and preprocessing data
 * Statistical analysis of contrasts between various conditions of flax and FOLINI
@@ -23,7 +23,7 @@ Our ain is to study the regulation of expression of genes responsible for the mo
 * Annotation enrichment analysis with terms:
 	* Gene Ontology 
 	* Plant Reactome (for flax)
-* Integrative Analysis (DE genes ∩ DM genes → Enrichment)
+* Integrative Analysis (DE genes ✕ DM genes → Enrichment)
 
 ## Experiment and methods
 
@@ -104,7 +104,7 @@ We **planned** to analyze 12 flax and 4 FOILINI comparisons between different ex
 ## Results
 ### Differential methylation
 
-There were a lot of genes associated with DMR in infected Atalante on the 3rd dpi and their number **decreased dramatically on the 5th dpi** compared to control. Also, there were few DM genes between control conditions.
+There were a lot of genes associated with DMR in infected Atalante on the 3rd dpi and their number **decreased dramatically on the 5th dpi** compared to control. Also, there were few DM genes between controls.
 Analysis of LM98 showed low number of DM genes between **all conditions** of the variety. 
 Contrasts between LM98 and Atalante varieties showed **large list of methylated genes** in all contrasts, especially between control conditions. However, such big number of DMR discovered in these contrasts is ﻿﻿﻿﻿﻿﻿the consequence of **low methyaltion level in LM98 variety**.
 **FOLINI had not enough data about methylation to process**
@@ -251,54 +251,44 @@ There were enough common genes obtained for AtF3 vs. AtK3 and AtF5 vs. AtF3 for 
 
 ![hm_common](Heatmaps/common.pdf)
 
-## Conclusions
+## Conclusion
 
-1. Susceptible variety of flax LM98 had no methylation dynamic during the Fusarium infection and were excluded from analysis
-2. Resistant variety of flax Atalante had strong reaction to FOLINI invasion on the 3rd dpi that faded down on the 5th dpi. General enriched terms of DEG revealed several functions involved in the defense response:
+1) **Susceptible variety** of flax LM98 had no methylation dynamic during the Fusarium infection and were excluded from analysis  
+2) **Resistant variety** of flax Atalante had strong reaction to FOLINI invasion on the 3rd dpi that faded down on the 5th dpi. General enriched terms of DEG revealed several functions involved in the defense response:  
 
-<style type="text/css">
-.tg  {border-collapse:collapse;border-spacing:0;}
-.tg td{border-color:black;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;
-  overflow:hidden;padding:10px 5px;word-break:normal;}
-.tg th{border-color:black;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;
-  font-weight:normal;overflow:hidden;padding:10px 5px;word-break:normal;}
-.tg .tg-1wig{font-weight:bold;text-align:left;vertical-align:top}
-.tg .tg-gpin{background-color:#C9DAF8;text-align:left;vertical-align:top}
-.tg .tg-p7vi{background-color:#C9DAF8;font-weight:bold;text-align:left;vertical-align:top}
-.tg .tg-6v43{background-color:#ffffff;font-weight:bold;text-align:left;vertical-align:top}
-.tg .tg-0lax{text-align:left;vertical-align:top}
-</style>
-<table class="tg">
+<table>
 <thead>
   <tr>
-    <th class="tg-6v43"><span style="font-weight:700;font-style:normal;text-decoration:none;color:#000">Phytoharmones synthesis</span></th>
-    <th class="tg-0lax"><span style="font-weight:400;font-style:normal;text-decoration:none;color:#000;background-color:transparent">Signalling and regulation</span></th>
+    <td>Phytoharmones synthesis</td>
+    <td>Signalling and regulation</td>
   </tr>
 </thead>
 <tbody>
   <tr>
-    <td class="tg-p7vi"><span style="font-weight:700;font-style:normal;text-decoration:none;color:#000;background-color:transparent">Response to oxidative stress</span></td>
-    <td class="tg-gpin"><span style="font-weight:400;font-style:normal;text-decoration:none;color:#000;background-color:transparent">Associated with hypersensivity reaction</span></td>
+    <td><b>Response to oxidative stress</b></td>
+    <td><b>Associated with hypersensivity reaction</b></td>
   </tr>
   <tr>
-    <td class="tg-1wig"><span style="font-weight:700;font-style:normal;text-decoration:none;color:#000;background-color:transparent">Cell wall modification</span></td>
-    <td class="tg-0lax"><span style="font-weight:400;font-style:normal;text-decoration:none;color:#000;background-color:transparent">Pathogen spreading prevention</span></td>
+    <td>Cell wall modification</td>
+    <td>Pathogen spreading prevention</td>
   </tr>
   <tr>
-    <td class="tg-p7vi"><span style="font-weight:700;font-style:normal;text-decoration:none;color:#000;background-color:transparent">Kinases activity</span></td>
-    <td class="tg-gpin"><span style="font-weight:400;font-style:normal;text-decoration:none;color:#000;background-color:transparent">Molecular signaling</span></td>
+    <td><b>Kinases activity</b></td>
+    <td><b>Molecular signaling<b></td>
   </tr>
   <tr>
-    <td class="tg-1wig"><span style="font-weight:700;font-style:normal;text-decoration:none;color:#000;background-color:transparent">Endopeptidase inhibitors</span></td>
-    <td class="tg-0lax"><span style="font-weight:400;font-style:normal;text-decoration:none;color:#000;background-color:transparent">Supression of FOLINI catabolic enzymes</span></td>
+    <td>Endopeptidase inhibitors</td>
+    <td>Supression of FOLINI catabolic enzymes</td>
   </tr>
   <tr>
-    <td class="tg-p7vi"><span style="font-weight:700;font-style:normal;text-decoration:none;color:#000;background-color:transparent">Hydrolisis of polysacharides</span></td>
-    <td class="tg-gpin"><span style="font-weight:400;font-style:normal;text-decoration:none;color:#000;background-color:transparent">Fungus cell wall degradation</span></td>
+    <td><b>Hydrolisis of polysacharides</b></td>
+    <td><b>Fungus cell wall degradation</b></td>
   </tr>
 </tbody>
-</table> 
+</table>
 
+3) **Integrative and differential methylation analyses** showed that some molecular mechanisms of defense response partly regulated epigenetically by direct DNA methylation. Such mechanisms **marked as bold text** in the table.  
+4) DEG of **FOLINI** turned out to be associated with **peptides synthesis** (possibly some effectors and enzymes) and **response to oxidative stress**. On the 5th dpi DEG were enriched with functional terms of **transmembrane transport**, **carbohydrates metabolism** and **response to oxidative stress**, thus pathogen **continued to actively parasitise**. FOLINI methylation data were insufficient for analysis which is in consistent with recent studies about low methylation dynamic in fungi
 
 ## Schematic representation of full pipeline
 
