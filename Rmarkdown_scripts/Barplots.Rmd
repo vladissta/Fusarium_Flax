@@ -42,14 +42,14 @@ dfm = data.frame(Comparison = titles_dmr, n_genes = n_sigs_dmr)
 # dfb_hypo = data.frame(Comparison = titles_dmr, Hypomethylated = n_sigs_hypo)
 
 dfm$group[dfm$Comparison %in% 
-            c('AtF3_vs_AtK3', 'AtF5_vs_AtK5', 'AtF5_vs_AtF3', 'AtK5_vs_AtK3')] = 'Сравнения Atalante'
-            # c('AtF3_vs_AtK3', 'AtF5_vs_AtK5', 'AtF5_vs_AtF3', 'AtK5_vs_AtK3')] = 'Comparisons of Atalante'
+            # c('AtF3_vs_AtK3', 'AtF5_vs_AtK5', 'AtF5_vs_AtF3', 'AtK5_vs_AtK3')] = 'Сравнения Atalante'
+            c('AtF3_vs_AtK3', 'AtF5_vs_AtK5', 'AtF5_vs_AtF3', 'AtK5_vs_AtK3')] = 'Comparisons of Atalante'
 dfm$group[dfm$Comparison %in% 
-            c('LMF3_vs_LMK3', 'LMF5_vs_LMK5', 'LMF5_vs_LMF3', 'LMK5_vs_LMK3')] = 'Сравнения LM98'
-            # c('LMF3_vs_LMK3', 'LMF5_vs_LMK5', 'LMF5_vs_LMF3', 'LMK5_vs_LMK3')] = 'Comparisons of LM98'
+            # c('LMF3_vs_LMK3', 'LMF5_vs_LMK5', 'LMF5_vs_LMF3', 'LMK5_vs_LMK3')] = 'Сравнения LM98'
+            c('LMF3_vs_LMK3', 'LMF5_vs_LMK5', 'LMF5_vs_LMF3', 'LMK5_vs_LMK3')] = 'Comparisons of LM98'
 dfm$group[dfm$Comparison %in% 
-            c('AtF3_vs_LMF3', 'AtF5_vs_LMF5', 'AtK5_vs_LMK5', 'AtK3_vs_LMK3')] = 'Сравнения между сортами'
-            # c('AtF3_vs_LMF3', 'AtF5_vs_LMF5', 'AtK5_vs_LMK5', 'AtK3_vs_LMK3')] = 'Comparisons between varieties'
+            # c('AtF3_vs_LMF3', 'AtF5_vs_LMF5', 'AtK5_vs_LMK5', 'AtK3_vs_LMK3')] = 'Сравнения между сортами'
+            c('AtF3_vs_LMF3', 'AtF5_vs_LMF5', 'AtK5_vs_LMK5', 'AtK3_vs_LMK3')] = 'Comparisons between varieties'
 
 
 dfm$group <- as.factor(dfm$group)
@@ -85,8 +85,8 @@ ggplot(dfm, aes(x = Comparison, y = n_genes, fill = group)) + geom_bar(stat = 'i
   coord_cartesian(ylim = c(0, 6400)) + 
   scale_y_continuous(expand = c(0,2)) +
   guides(fill = guide_legend(override.aes = list(size = 30) ) ) +
-  xlab("\nСравнение") + ylab("Число генов, ассоциированных с ДМР") +  labs(fill=NULL)
-  # xlab("Contrast") + ylab("Number of genes associated with DMR") +  labs(fill=NULL)
+  # xlab("\nСравнение") + ylab("Число генов, ассоциированных с ДМР") +  labs(fill=NULL)
+  xlab("Contrast") + ylab("Number of genes associated with DMR") +  labs(fill=NULL)
 
 dev.off()
 ```
