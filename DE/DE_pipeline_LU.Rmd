@@ -1,0 +1,464 @@
+---
+title: "DE_pipeline_LU"
+output: pdf_document
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(eval = TRUE)
+```
+
+```{r eval=T, echo=F, message=FALSE, warning=FALSE}
+require(sleuth)
+require(ggvenn)
+require(tidyverse)
+require(XGR)
+require(readxl)
+```
+
+```{r, warning=FALSE}
+dir.create('DE/OUT_LU')
+```
+
+
+## Load the data
+
+```{r, eval=F, echo=TRUE}
+sample_id_LU = dir(file.path("DE/kallisto_LU"))
+
+dirs_LU <- sapply(sample_id_LU, function(id) file.path('DE/kallisto_LU', id)) #
+cond_LU = rep(c( 'AtF3', 'AtF5', 'AtK3', 'AtK5', 'LMF3', 'LMF5', 'LMK3', 'LMK5'), each = 3)
+
+df_LU = data.frame(sample = sample_id_LU, path = dirs_LU, conditions = cond_LU)
+df_LU = df_LU %>% mutate(conditions = as.factor(conditions)) %>% filter(sample != 'LMF3_1.k31')
+```
+
+### Function to calculate DE and return table of statistics for each gene
+
+```{r, eval=F, echo=T}
+difexpr = function(df, cond_1, cond_2){
+  
+  df = df[df$conditions %in% c(cond_1, cond_2),]
+  
+  so = sleuth_prep(df, extra_bootstrap_summary = T, read_bootstrap_tpm = TRUE, ~conditions)
+  so = sleuth_fit(so, ~conditions, 'full')
+  so = sleuth_fit(so, ~1, 'reduced')
+  so = sleuth_lrt(so, 'reduced', 'full')
+  
+  lfc<- kallisto_table(so) %>%
+    group_by(target_id, conditions) %>%
+    summarize(mean_ct=mean(est_counts)) %>%
+    group_by(target_id) %>% 
+    summarise(lFC = log2((mean_ct[conditions==cond_1]+0.01)/(mean_ct[conditions==cond_2]+0.01)))
+  
+  sleuth_table <- sleuth_results(so, test = "reduced:full", test_type = 'lrt')
+  sleuth_table = merge(sleuth_table, lfc, by = 'target_id')
+  
+  return(sleuth_table)
+}
+```
+
+## Tables of DE
+
+```{r warning=F, message=F}
+tab_LMK5_vs_LMK3 = difexpr(df_LU, 'LMK5', "LMK3")
+tab_AtK5_vs_AtK3 = difexpr(df_LU, 'AtK5', "AtK3")
+tab_AtK3_vs_LMK3 = difexpr(df_LU, 'AtK3', "LMK3")
+tab_AtK5_vs_LMK5 = difexpr(df_LU, 'AtK5', "LMK5")
+
+tab_LMF3_vs_LMK3 = difexpr(df_LU, 'LMF3', "LMK3")
+tab_LMF5_vs_LMK5 = difexpr(df_LU, 'LMF5', "LMK5")
+tab_AtF3_vs_AtK3 = difexpr(df_LU, 'AtF3', "AtK3")
+tab_AtF5_vs_AtK5 = difexpr(df_LU, 'AtF5', "AtK5")
+
+tab_LMF5_vs_LMF3 = difexpr(df_LU, 'LMF5', "LMF3")
+tab_AtF5_vs_AtF3 = difexpr(df_LU, 'AtF5', "AtF3")
+tab_AtF3_vs_LMF3 = difexpr(df_LU, 'AtF3', "LMF3")
+tab_AtF5_vs_LMF5 = difexpr(df_LU, 'AtF5', "LMF5")
+
+```
+
+### Function to filter Significant DE genes
+
+```{r}
+sig = function(tab,q, lfc){
+  t = tab %>% dplyr::filter(qval <= q, abs(lFC) >= lfc) %>% arrange(qval)
+  return(t)}
+```
+
+## Filtering
+
+```{r echo=T}
+sig_LMK5_vs_LMK3 = sig(tab_LMK5_vs_LMK3, 0.05, 1)
+sig_AtK5_vs_AtK3 = sig(tab_AtK5_vs_AtK3, 0.01, 1.25)
+sig_AtK3_vs_LMK3 = sig(tab_AtK3_vs_LMK3, 0.05, 1.25)
+sig_AtK5_vs_LMK5 = sig(tab_AtK5_vs_LMK5, 0.05, 1.25)
+
+sig_LMF3_vs_LMK3 = sig(tab_LMF3_vs_LMK3, 0.05, 1)
+sig_LMF5_vs_LMK5 = sig(tab_LMF5_vs_LMK5, 0.05, 1)
+sig_AtF3_vs_AtK3 = sig(tab_AtF3_vs_AtK3, 0.01, 1.25)
+sig_AtF5_vs_AtK5 = sig(tab_AtF5_vs_AtK5, 0.01, 1.25)
+
+sig_LMF5_vs_LMF3 = sig(tab_LMF5_vs_LMF3, 0.05, 1)
+sig_AtF5_vs_AtF3 = sig(tab_AtF5_vs_AtF3, 0.01, 1.25)
+sig_AtF3_vs_LMF3 = sig(tab_AtF3_vs_LMF3, 0.05, 1.25)
+sig_AtF5_vs_LMF5 = sig(tab_AtF5_vs_LMF5, 0.05, 1.25)
+```
+
+### Up- and Downregulated genes filtering
+
+```{r}
+sig_LMK5_vs_LMK3_up = sig_LMK5_vs_LMK3 %>% filter(lFC >= 1)
+sig_AtK5_vs_AtK3_up = sig_AtK5_vs_AtK3 %>% filter(lFC >= 1.25)
+sig_AtK3_vs_LMK3_up = sig_AtK3_vs_LMK3 %>% filter(lFC >= 1.25)
+sig_AtK5_vs_LMK5_up = sig_AtK5_vs_LMK5 %>% filter(lFC >= 1.25)
+
+sig_LMF3_vs_LMK3_up = sig_LMF3_vs_LMK3 %>% filter(lFC >= 1)
+sig_LMF5_vs_LMK5_up = sig_LMF5_vs_LMK5 %>% filter(lFC >= 1)
+sig_AtF3_vs_AtK3_up = sig_AtF3_vs_AtK3 %>% filter(lFC >= 1.25)
+sig_AtF5_vs_AtK5_up = sig_AtF5_vs_AtK5 %>% filter(lFC >= 1.25)
+
+sig_LMF5_vs_LMF3_up = sig_LMF5_vs_LMF3 %>% filter(lFC >= 1)
+sig_AtF5_vs_AtF3_up = sig_AtF5_vs_AtF3 %>% filter(lFC >= 1.25)
+sig_AtF3_vs_LMF3_up = sig_AtF3_vs_LMF3 %>% filter(lFC >= 1.25)
+sig_AtF5_vs_LMF5_up = sig_AtF5_vs_LMF5 %>% filter(lFC >= 1.25)
+```
+
+```{r}
+sig_LMK5_vs_LMK3_down = sig_LMK5_vs_LMK3 %>% filter(lFC <= -1)
+sig_AtK5_vs_AtK3_down = sig_AtK5_vs_AtK3 %>% filter(lFC <= -1.25)
+sig_AtK3_vs_LMK3_down = sig_AtK3_vs_LMK3 %>% filter(lFC <= -1.25)
+sig_AtK5_vs_LMK5_down = sig_AtK5_vs_LMK5 %>% filter(lFC <= -1.25)
+
+sig_LMF3_vs_LMK3_down = sig_LMF3_vs_LMK3 %>% filter(lFC <= -1)
+sig_LMF5_vs_LMK5_down = sig_LMF5_vs_LMK5 %>% filter(lFC <= -1)
+sig_AtF3_vs_AtK3_down = sig_AtF3_vs_AtK3 %>% filter(lFC <= -1.25)
+sig_AtF5_vs_AtK5_down = sig_AtF5_vs_AtK5 %>% filter(lFC <= -1.25)
+
+sig_LMF5_vs_LMF3_down = sig_LMF5_vs_LMF3 %>% filter(lFC <= -1)
+sig_AtF5_vs_AtF3_down = sig_AtF5_vs_AtF3 %>% filter(lFC <= -1.25)
+sig_AtF3_vs_LMF3_down = sig_AtF3_vs_LMF3 %>% filter(lFC <= -1.25)
+sig_AtF5_vs_LMF5_down = sig_AtF5_vs_LMF5 %>% filter(lFC <= -1.25)
+```
+
+### Loading the annotation table. Gene Ontology
+
+```{r}
+new_xl = readxl::read_xlsx('Annotation_tables/Lu_2_go.xlsx', col_names = c ('gene', 'name', 'description')) %>% select(gene, description)
+# new_xl = xl[-1,]
+```
+
+### Annotation function
+
+```{r}
+annot_lu = function(sig, title, annotation_table){
+  
+  signames = as.data.frame(sig[1])
+  
+  xsig = xEnricherYours(signames, annotation_table, 
+                        size.range=c(10,2000),
+                        min.overlap = 3,
+                        test = "hypergeo",
+                        p.adjust.method = 'BH', silent = T)
+
+  table_sig <-  xEnrichViewer(xsig, sortBy = 'adjp', 
+                               top_num = nrow(xsig$term_info))
+  
+  if(!is.null(table_sig)){
+    table_sig <- table_sig %>% filter(adjp<0.01) %>% rename(description = name)
+    
+    rownames(table_sig) = NULL
+    plot(xEnrichBarplot(xsig, displayBy = 'fdr', 
+                        FDR.cutoff = 0.01, font.family = 'Times',
+                        bar.label.size = 5, 
+                        top_num = 10, bar.width = .8) + ggtitle(title)) 
+  }
+  return(as.data.frame(table_sig))
+}
+```
+
+## Annotating GO
+
+```{r, warning=FALSE}
+dir.create('DE/OUT_LU/OUT_Annot')
+```
+
+```{r fig.height=6, fig.width=12, warning=F, message=FALSE}
+pdf('DE/OUT_LU/OUT_Annot/Barplots_ALL.pdf', width = 12, family = "Times")
+annot_LMK5_vs_LMK3 = annot_lu(sig_LMK5_vs_LMK3, 'LMK5_vs_LMK3 ALL', new_xl)
+annot_AtK5_vs_AtK3 = annot_lu(sig_AtK5_vs_AtK3, 'AtK5_vs_AtK3 ALL', new_xl)
+annot_AtK3_vs_LMK3 = annot_lu(sig_AtK3_vs_LMK3, 'AtK3_vs_LMK3 ALL', new_xl) 
+annot_AtK5_vs_LMK5 = annot_lu(sig_AtK5_vs_LMK5, 'AtK5_vs_LMK5 ALL', new_xl)
+
+annot_LMF3_vs_LMK3 = annot_lu(sig_LMF3_vs_LMK3, 'LMF3_vs_LMK3 ALL', new_xl)
+annot_LMF5_vs_LMK5 = annot_lu(sig_LMF5_vs_LMK5, 'LMF5_vs_LMK5 ALL', new_xl)
+annot_AtF3_vs_AtK3 = annot_lu(sig_AtF3_vs_AtK3, 'AtF3_vs_AtK3 ALL', new_xl) 
+annot_AtF5_vs_AtK5 = annot_lu(sig_AtF5_vs_AtK5, 'AtF5_vs_AtK5 ALL', new_xl)
+
+annot_LMF5_vs_LMF3 = annot_lu(sig_LMF5_vs_LMF3, 'LMF5_vs_LMF3 ALL', new_xl)
+annot_AtF5_vs_AtF3 = annot_lu(sig_AtF5_vs_AtF3, 'AtF5_vs_AtF3 ALL', new_xl)
+annot_AtF3_vs_LMF3 = annot_lu(sig_AtF3_vs_LMF3, 'AtF3_vs_LMF3 ALL', new_xl) 
+annot_AtF5_vs_LMF5 = annot_lu(sig_AtF5_vs_LMF5, 'AtF5_vs_LMF5 ALL', new_xl)
+dev.off()
+```
+
+
+```{r fig.height=6, fig.width=12, warning=F, message=FALSE}
+pdf('DE/OUT_LU/OUT_Annot/Barplots_Upregulated.pdf', width = 12, family = "Times")
+annot_LMK5_vs_LMK3_up = annot_lu(sig_LMK5_vs_LMK3_up, 'LMK5_vs_LMK3 Upregulated', new_xl)
+annot_AtK5_vs_AtK3_up = annot_lu(sig_AtK5_vs_AtK3_up, 'AtK5_vs_AtK3 Upregulated', new_xl)
+annot_AtK3_vs_LMK3_up = annot_lu(sig_AtK3_vs_LMK3_up, 'AtK3_vs_LMK3 Upregulated', new_xl) 
+annot_AtK5_vs_LMK5_up = annot_lu(sig_AtK5_vs_LMK5_up, 'AtK5_vs_LMK5 Upregulated', new_xl)
+
+annot_LMF3_vs_LMK3_up = annot_lu(sig_LMF3_vs_LMK3_up, 'LMF3_vs_LMK3 Upregulated', new_xl)
+annot_LMF5_vs_LMK5_up = annot_lu(sig_LMF5_vs_LMK5_up, 'LMF5_vs_LMK5 Upregulated', new_xl)
+annot_AtF3_vs_AtK3_up = annot_lu(sig_AtF3_vs_AtK3_up, 'AtF3_vs_AtK3 Upregulated', new_xl) 
+annot_AtF5_vs_AtK5_up = annot_lu(sig_AtF5_vs_AtK5_up, 'AtF5_vs_AtK5 Upregulated', new_xl)
+
+annot_LMF5_vs_LMF3_up = annot_lu(sig_LMF5_vs_LMF3_up, 'LMF5_vs_LMF3 Upregulated', new_xl)
+annot_AtF5_vs_AtF3_up = annot_lu(sig_AtF5_vs_AtF3_up, 'AtF5_vs_AtF3 Upregulated', new_xl)
+annot_AtF3_vs_LMF3_up = annot_lu(sig_AtF3_vs_LMF3_up, 'AtF3_vs_LMF3 Upregulated', new_xl) 
+annot_AtF5_vs_LMF5_up = annot_lu(sig_AtF5_vs_LMF5_up, 'AtF5_vs_LMF5 Upregulated', new_xl)
+dev.off()
+```
+
+
+```{r fig.height=6, fig.width=12, warning=F, message=FALSE}
+pdf('DE/OUT_LU/OUT_Annot/Barplots_Downregulated.pdf', width = 12, family = "Times")
+annot_LMK5_vs_LMK3_down = annot_lu(sig_LMK5_vs_LMK3_down, 'LMK5_vs_LMK3 Downregulated', new_xl)
+annot_AtK5_vs_AtK3_down = annot_lu(sig_AtK5_vs_AtK3_down, 'AtK5_vs_AtK3 Downregulated', new_xl)
+annot_AtK3_vs_LMK3_down = annot_lu(sig_AtK3_vs_LMK3_down, 'AtK3_vs_LMK3 Downregulated', new_xl) 
+annot_AtK5_vs_LMK5_down = annot_lu(sig_AtK5_vs_LMK5_down, 'AtK5_vs_LMK5 Downregulated', new_xl)
+
+annot_LMF3_vs_LMK3_down = annot_lu(sig_LMF3_vs_LMK3_down, 'LMF3_vs_LMK3 Downregulated', new_xl)
+annot_LMF5_vs_LMK5_down = annot_lu(sig_LMF5_vs_LMK5_down, 'LMF5_vs_LMK5 Downregulated', new_xl)
+annot_AtF3_vs_AtK3_down = annot_lu(sig_AtF3_vs_AtK3_down, 'AtF3_vs_AtK3 Downregulated', new_xl) 
+annot_AtF5_vs_AtK5_down = annot_lu(sig_AtF5_vs_AtK5_down, 'AtF5_vs_AtK5 Downregulated', new_xl)
+
+annot_LMF5_vs_LMF3_down = annot_lu(sig_LMF5_vs_LMF3_down, 'LMF5_vs_LMF3 Downregulated', new_xl)
+annot_AtF5_vs_AtF3_down = annot_lu(sig_AtF5_vs_AtF3_down, 'AtF5_vs_AtF3 Downregulated', new_xl)
+annot_AtF3_vs_LMF3_down = annot_lu(sig_AtF3_vs_LMF3_down, 'AtF3_vs_LMF3 Downregulated', new_xl) 
+annot_AtF5_vs_LMF5_down = annot_lu(sig_AtF5_vs_LMF5_down, 'AtF5_vs_LMF5 Downregulated', new_xl)
+dev.off()
+```
+
+
+### Loading the annotation table. Plant Reactome
+
+```{r}
+reactome = read_xlsx('./Annotation_tables/reactome_joint.xlsx')
+```
+
+## Annotating Reactome
+
+```{r fig.height=6, fig.width=12, warning=F, message=FALSE}
+pdf('DE/OUT_LU/OUT_Annot/Barplots_Reactome_ALL.pdf', width = 12, family = "Times")
+reactome_LMK5_vs_LMK3 = annot_lu(sig_LMK5_vs_LMK3, 'LMK5_vs_LMK3 ALL', reactome)
+reactome_AtK5_vs_AtK3 = annot_lu(sig_AtK5_vs_AtK3, 'AtK5_vs_AtK3 ALL', reactome)
+reactome_AtK3_vs_LMK3 = annot_lu(sig_AtK3_vs_LMK3, 'AtK3_vs_LMK3 ALL', reactome) 
+reactome_AtK5_vs_LMK5 = annot_lu(sig_AtK5_vs_LMK5, 'AtK5_vs_LMK5 ALL', reactome)
+
+reactome_LMF3_vs_LMK3 = annot_lu(sig_LMF3_vs_LMK3, 'LMF3_vs_LMK3 ALL', reactome)
+reactome_LMF5_vs_LMK5 = annot_lu(sig_LMF5_vs_LMK5, 'LMF5_vs_LMK5 ALL', reactome)
+reactome_AtF3_vs_AtK3 = annot_lu(sig_AtF3_vs_AtK3, 'AtF3_vs_AtK3 ALL', reactome) 
+reactome_AtF5_vs_AtK5 = annot_lu(sig_AtF5_vs_AtK5, 'AtF5_vs_AtK5 ALL', reactome)
+
+reactome_LMF5_vs_LMF3 = annot_lu(sig_LMF5_vs_LMF3, 'LMF5_vs_LMF3 ALL', reactome)
+reactome_AtF5_vs_AtF3 = annot_lu(sig_AtF5_vs_AtF3, 'AtF5_vs_AtF3 ALL', reactome)
+reactome_AtF3_vs_LMF3 = annot_lu(sig_AtF3_vs_LMF3, 'AtF3_vs_LMF3 ALL', reactome) 
+reactome_AtF5_vs_LMF5 = annot_lu(sig_AtF5_vs_LMF5, 'AtF5_vs_LMF5 ALL', reactome)
+dev.off()
+```
+
+
+```{r fig.height=6, fig.width=12, warning=F, message=FALSE}
+pdf('DE/OUT_LU/OUT_Annot/Barplots_Reactome_Upregulated.pdf', width = 12, family = "Times")
+reactome_LMK5_vs_LMK3_up = annot_lu(sig_LMK5_vs_LMK3_up, 'LMK5_vs_LMK3 Upregulated', reactome)
+reactome_AtK5_vs_AtK3_up = annot_lu(sig_AtK5_vs_AtK3_up, 'AtK5_vs_AtK3 Upregulated', reactome)
+reactome_AtK3_vs_LMK3_up = annot_lu(sig_AtK3_vs_LMK3_up, 'AtK3_vs_LMK3 Upregulated', reactome) 
+reactome_AtK5_vs_LMK5_up = annot_lu(sig_AtK5_vs_LMK5_up, 'AtK5_vs_LMK5 Upregulated', reactome)
+
+reactome_LMF3_vs_LMK3_up = annot_lu(sig_LMF3_vs_LMK3_up, 'LMF3_vs_LMK3 Upregulated', reactome)
+reactome_LMF5_vs_LMK5_up = annot_lu(sig_LMF5_vs_LMK5_up, 'LMF5_vs_LMK5 Upregulated', reactome)
+reactome_AtF3_vs_AtK3_up = annot_lu(sig_AtF3_vs_AtK3_up, 'AtF3_vs_AtK3 Upregulated', reactome) 
+reactome_AtF5_vs_AtK5_up = annot_lu(sig_AtF5_vs_AtK5_up, 'AtF5_vs_AtK5 Upregulated', reactome)
+
+reactome_LMF5_vs_LMF3_up = annot_lu(sig_LMF5_vs_LMF3_up, 'LMF5_vs_LMF3 Upregulated', reactome)
+reactome_AtF5_vs_AtF3_up = annot_lu(sig_AtF5_vs_AtF3_up, 'AtF5_vs_AtF3 Upregulated', reactome)
+reactome_AtF3_vs_LMF3_up = annot_lu(sig_AtF3_vs_LMF3_up, 'AtF3_vs_LMF3 Upregulated', reactome) 
+reactome_AtF5_vs_LMF5_up = annot_lu(sig_AtF5_vs_LMF5_up, 'AtF5_vs_LMF5 Upregulated', reactome)
+dev.off()
+```
+
+
+```{r fig.height=6, fig.width=12, warning=F, message=FALSE}
+pdf('DE/OUT_LU/OUT_Annot/Barplots_Reactome_Downregulated.pdf', width = 12, family = "Times")
+reactome_LMK5_vs_LMK3_down = annot_lu(sig_LMK5_vs_LMK3_down, 'LMK5_vs_LMK3 Downregulated', reactome)
+reactome_AtK5_vs_AtK3_down = annot_lu(sig_AtK5_vs_AtK3_down, 'AtK5_vs_AtK3 Downregulated', reactome)
+reactome_AtK3_vs_LMK3_down = annot_lu(sig_AtK3_vs_LMK3_down, 'AtK3_vs_LMK3 Downregulated', reactome) 
+reactome_AtK5_vs_LMK5_down = annot_lu(sig_AtK5_vs_LMK5_down, 'AtK5_vs_LMK5 Downregulated', reactome)
+
+reactome_LMF3_vs_LMK3_down = annot_lu(sig_LMF3_vs_LMK3_down, 'LMF3_vs_LMK3 Downregulated', reactome)
+reactome_LMF5_vs_LMK5_down = annot_lu(sig_LMF5_vs_LMK5_down, 'LMF5_vs_LMK5 Downregulated', reactome)
+reactome_AtF3_vs_AtK3_down = annot_lu(sig_AtF3_vs_AtK3_down, 'AtF3_vs_AtK3 Downregulated', reactome) 
+reactome_AtF5_vs_AtK5_down = annot_lu(sig_AtF5_vs_AtK5_down, 'AtF5_vs_AtK5 Downregulated', reactome)
+
+reactome_LMF5_vs_LMF3_down = annot_lu(sig_LMF5_vs_LMF3_down, 'LMF5_vs_LMF3 Downregulated', reactome)
+reactome_AtF5_vs_AtF3_down = annot_lu(sig_AtF5_vs_AtF3_down, 'AtF5_vs_AtF3 Downregulated', reactome)
+reactome_AtF3_vs_LMF3_down = annot_lu(sig_AtF3_vs_LMF3_down, 'AtF3_vs_LMF3 Downregulated', reactome) 
+reactome_AtF5_vs_LMF5_down = annot_lu(sig_AtF5_vs_LMF5_down, 'AtF5_vs_LMF5 Downregulated', reactome)
+dev.off()
+```
+
+
+## Making some lists
+
+```{r}
+titles = c("LMK5_vs_LMK3", "AtK5_vs_AtK3", "AtK3_vs_LMK3", "AtK5_vs_LMK5",
+           "LMF3_vs_LMK3", "LMF5_vs_LMK5", "AtF3_vs_AtK3", "AtF5_vs_AtK5",
+           "LMF5_vs_LMF3", "AtF5_vs_AtF3", "AtF3_vs_LMF3", "AtF5_vs_LMF5")
+
+v_tabs = list(tab_LMK5_vs_LMK3, tab_AtK5_vs_AtK3, tab_AtK3_vs_LMK3, tab_AtK5_vs_LMK5,
+           tab_LMF3_vs_LMK3, tab_LMF5_vs_LMK5, tab_AtF3_vs_AtK3, tab_AtF5_vs_AtK5,
+           tab_LMF5_vs_LMF3, tab_AtF5_vs_AtF3, tab_AtF3_vs_LMF3, tab_AtF5_vs_LMF5)
+
+v_sigs = list(sig_LMK5_vs_LMK3, sig_AtK5_vs_AtK3, sig_AtK3_vs_LMK3, sig_AtK5_vs_LMK5,
+           sig_LMF3_vs_LMK3, sig_LMF5_vs_LMK5, sig_AtF3_vs_AtK3, sig_AtF5_vs_AtK5,
+           sig_LMF5_vs_LMF3, sig_AtF5_vs_AtF3, sig_AtF3_vs_LMF3, sig_AtF5_vs_LMF5)
+
+v_sigs_up = list(sig_LMK5_vs_LMK3_up, sig_AtK5_vs_AtK3_up, sig_AtK3_vs_LMK3_up, sig_AtK5_vs_LMK5_up,
+           sig_LMF3_vs_LMK3_up, sig_LMF5_vs_LMK5_up, sig_AtF3_vs_AtK3_up, sig_AtF5_vs_AtK5_up,
+           sig_LMF5_vs_LMF3_up, sig_AtF5_vs_AtF3_up, sig_AtF3_vs_LMF3_up, sig_AtF5_vs_LMF5_up)
+
+v_sigs_down = list(sig_LMK5_vs_LMK3_down, sig_AtK5_vs_AtK3_down, sig_AtK3_vs_LMK3_down, sig_AtK5_vs_LMK5_down,
+           sig_LMF3_vs_LMK3_down, sig_LMF5_vs_LMK5_down, sig_AtF3_vs_AtK3_down, sig_AtF5_vs_AtK5_down,
+           sig_LMF5_vs_LMF3_down, sig_AtF5_vs_AtF3_down, sig_AtF3_vs_LMF3_down, sig_AtF5_vs_LMF5_down)
+
+v_annots = list(annot_LMK5_vs_LMK3, annot_AtK5_vs_AtK3, annot_AtK3_vs_LMK3, annot_AtK5_vs_LMK5,
+           annot_LMF3_vs_LMK3, annot_LMF5_vs_LMK5, annot_AtF3_vs_AtK3, annot_AtF5_vs_AtK5,
+           annot_LMF5_vs_LMF3, annot_AtF5_vs_AtF3, annot_AtF3_vs_LMF3, annot_AtF5_vs_LMF5)
+
+v_annots_up = list(annot_LMK5_vs_LMK3_up, annot_AtK5_vs_AtK3_up, annot_AtK3_vs_LMK3_up, annot_AtK5_vs_LMK5_up,
+           annot_LMF3_vs_LMK3_up, annot_LMF5_vs_LMK5_up, annot_AtF3_vs_AtK3_up, annot_AtF5_vs_AtK5_up,
+           annot_LMF5_vs_LMF3_up, annot_AtF5_vs_AtF3_up, annot_AtF3_vs_LMF3_up, annot_AtF5_vs_LMF5_up)
+
+v_annots_down = list(annot_LMK5_vs_LMK3_down, annot_AtK5_vs_AtK3_down, annot_AtK3_vs_LMK3_down, annot_AtK5_vs_LMK5_down,
+           annot_LMF3_vs_LMK3_down, annot_LMF5_vs_LMK5_down, annot_AtF3_vs_AtK3_down, annot_AtF5_vs_AtK5_down,
+           annot_LMF5_vs_LMF3_down, annot_AtF5_vs_AtF3_down, annot_AtF3_vs_LMF3_down, annot_AtF5_vs_LMF5_down)
+
+v_reactomes = list(reactome_LMK5_vs_LMK3, reactome_AtK5_vs_AtK3, reactome_AtK3_vs_LMK3, reactome_AtK5_vs_LMK5,
+                reactome_LMF3_vs_LMK3, reactome_LMF5_vs_LMK5, reactome_AtF3_vs_AtK3, reactome_AtF5_vs_AtK5,
+                reactome_LMF5_vs_LMF3, reactome_AtF5_vs_AtF3, reactome_AtF3_vs_LMF3, reactome_AtF5_vs_LMF5)
+
+v_reactomes_up = list(reactome_LMK5_vs_LMK3_up, reactome_AtK5_vs_AtK3_up, reactome_AtK3_vs_LMK3_up, reactome_AtK5_vs_LMK5_up,
+                   reactome_LMF3_vs_LMK3_up, reactome_LMF5_vs_LMK5_up, reactome_AtF3_vs_AtK3_up, reactome_AtF5_vs_AtK5_up,
+                   reactome_LMF5_vs_LMF3_up, reactome_AtF5_vs_AtF3_up, reactome_AtF3_vs_LMF3_up, reactome_AtF5_vs_LMF5_up)
+
+v_reactomes_down = list(reactome_LMK5_vs_LMK3_down, reactome_AtK5_vs_AtK3_down, reactome_AtK3_vs_LMK3_down, reactome_AtK5_vs_LMK5_down,
+                     reactome_LMF3_vs_LMK3_down, reactome_LMF5_vs_LMK5_down, reactome_AtF3_vs_AtK3_down, reactome_AtF5_vs_AtK5_down,
+                     reactome_LMF5_vs_LMF3_down, reactome_AtF5_vs_AtF3_down, reactome_AtF3_vs_LMF3_down, reactome_AtF5_vs_LMF5_down)
+
+names(v_tabs) = titles 
+names(v_sigs) = titles 
+names(v_sigs_up) = titles 
+names(v_sigs_down) = titles
+names(v_annots) = titles 
+names(v_annots_up) = titles 
+names(v_annots_down) = titles
+names(v_annots) = titles 
+names(v_annots_up) = titles 
+names(v_annots_down) = titles 
+
+```
+
+### RDS files
+
+```{r}
+saveRDS(titles, 'RDS_files/titles.rds')
+saveRDS(v_sigs, 'RDS_files/v_sigs.rds')
+saveRDS(v_annots, 'RDS_files/v_annots.rds')
+saveRDS(v_reactomes, 'RDS_files/v_reactomes.rds')
+```
+
+## Writing Tables function
+
+```{r}
+write_tables_lu = function(table, step, title, regulation=NULL, reactome=F){
+  if (step == 'DE'){
+    divider = '_DE_'
+  } else if(step == 'Annot'){
+    if (reactome){
+      divider = '_Reactome_'
+    }
+    else{
+      divider = '_GO_'
+    }
+    
+  } else{
+   divider = '_all_genes_'
+  }
+  
+  writexl::write_xlsx(table, path = file.path('DE/OUT_LU/', 
+                                              paste('OUT_', step, sep=''),
+                                              paste(title, divider, regulation, '.xlsx', sep='')))
+}
+```
+
+# Tables .xlsx
+
+```{r, warning=FALSE}
+dir.create('DE/OUT_LU/OUT_all')
+dir.create('DE/OUT_LU/OUT_DE')
+```
+
+```{r}
+for (i in 1:12){
+  write_tables_lu(v_tabs[[i]], step = 'all', title = titles[i])
+}
+```
+
+
+```{r}
+for (i in 1:12){
+  write_tables_lu(v_sigs[[i]], step = 'DE', title = titles[i], regulation = 'ALL')
+}
+
+for (i in 1:12){
+  write_tables_lu(v_sigs_up[[i]], step = 'DE', title = titles[i], regulation = 'Upregulated')
+}
+
+for (i in 1:12){
+  write_tables_lu(v_sigs_down[[i]], step = 'DE', title = titles[i], regulation = 'Downregulated')
+}
+```
+
+
+```{r}
+for (i in 1:12){
+  write_tables_lu(v_annots[[i]], step = 'Annot', title = titles[i], regulation = 'ALL')
+}
+
+for (i in 1:12){
+  write_tables_lu(v_annots_up[[i]], step = 'Annot', title = titles[i], regulation = 'Upregulated')
+}
+
+for (i in 1:12){
+  write_tables_lu(v_annots_down[[i]], step = 'Annot', title = titles[i], regulation = 'Downregulated')
+}
+
+```
+
+```{r}
+for (i in 1:12){
+  write_tables_lu(v_reactomes[[i]], step = 'Annot', title = titles[i], regulation = 'ALL', reactome=T)
+}
+
+for (i in 1:12){
+  write_tables_lu(v_reactomes_up[[i]], step = 'Annot', title = titles[i], regulation = 'Upregulated', reactome=T)
+}
+
+for (i in 1:12){
+  write_tables_lu(v_reactomes_down[[i]], step = 'Annot', title = titles[i], regulation = 'Downregulated', reactome=T)
+}
+```
+

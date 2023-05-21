@@ -1,0 +1,114 @@
+---
+title: "common_genes"
+output: pdf_document
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+```{r}
+library(XGR)
+library(dplyr)
+```
+
+
+## Annotating overlaps
+
+### take overlaps
+```{r}
+ovlp_fun = function(dmr_tables, vsigs){
+  
+  ovlps_l = list()
+  
+  vsigs_no_empty = vsigs[names(tables$tables_all_overlap)]
+
+  
+    titles = names(dmr_tables$tables_all_overlap)
+  
+   for (i in 1:length(vsigs_no_empty)){
+
+  ovlps_l[titles[i]] <- 
+    list(Reduce(intersect, list(DMR = unique(dmr_tables$tables_all_overlap[[i]]$gene),
+                                DE = vsigs_no_empty[[i]]$target_id)))
+   }
+  return(ovlps_l)
+  
+}
+```
+
+```{r}
+ovlps_CpG = ovlp_fun(tables_CpG, v_sigs)
+# ovlps_CHG = ovlp_fun(tables_CHG, v_sigs)
+# ovlps_CHH = ovlp_fun(tables_CHH, v_sigs) 
+```
+
+### anotation
+
+
+
+```{r}
+annot = function(signames, title, annotation_table){
+  
+  xsig = xEnricherYours(signames, annotation_table, 
+                        size.range=c(10,2000),
+                        min.overlap = 3,
+                        test = "hypergeo",
+                        p.adjust.method = 'BH', silent = T,
+                        background.file = all_genes)
+
+  table_sig <-  xEnrichViewer(xsig, sortBy = 'adjp', 
+                               top_num = nrow(xsig$term_info))
+  
+  if(!is.null(table_sig)){
+    table_sig <- table_sig %>% filter(adjp<0.01) %>% dplyr::rename(description = name)
+    
+    rownames(table_sig) = NULL
+
+  return(as.data.frame(table_sig))
+}
+}
+```
+
+```{r}
+new_xl = readxl::read_xlsx('./Annotation_tables/Lu_2_go.xlsx', col_names = c ('gene', 'name', 'description')) %>% select(gene, description)
+reactome = read_xlsx('./Annotation_tables/reactome_joint.xlsx')
+```
+
+
+```{r fig.height=4, fig.width=6, warning=F}
+
+annots_ovlps_CpG_GO = lapply(ovlps_CpG, annot, 'Overlaps' , new_xl)
+# annots_ovlps_CHG_GO = lapply(ovlps_CHG, annot, 'Overlaps' , new_xl)
+# annots_ovlps_CHH_GO = lapply(ovlps_CHH, annot, 'Overlaps' , new_xl)
+
+annots_ovlps_CpG_reactome = lapply(ovlps_CpG, 
+                                   annot, 'Overlaps' , reactome)
+# annots_ovlps_CHG_reactome = lapply(ovlps_CHG, 
+                                   # annot, 'Overlaps' , reactome)
+# annots_ovlps_CHH_reactome = lapply(ovlps_CHH, 
+                                   # annot, 'Overlaps' , reactome)
+```
+
+```{r}
+saveRDS(annots_ovlps_CpG_GO, 'RDS_files/annots_ovlps_CpG_GO.rds')
+saveRDS(annots_ovlps_CpG_reactome, 'RDS_files/annots_ovlps_CpG_reactome.rds')
+```
+
+###### ???
+
+
+```{r}
+titles = readRDS('RDS_files/titles.rds')
+```
+
+```{r}
+ordered_titles = titles[order(titles)]
+
+for (i in 1:12){
+  writexl::write_xlsx(annots_ovlps_CpG_GO[[i]], 
+                      paste0('common_genes_xlsx/common_genes_', ordered_titles[i], '.xlsx'))
+}
+ 
+```

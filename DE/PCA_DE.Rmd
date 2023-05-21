@@ -1,0 +1,142 @@
+---
+title: "PCA for DE"
+output:
+  pdf_document: default
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+```{r, message=FALSE, warning=FALSE}
+library(sleuth) 
+library(ggplot2)
+library(cowplot)
+library(tidyverse)
+library(FactoMineR)
+```
+
+
+### Function for making sleuth objects
+```{r}
+so_make = function(df, cond_1, cond_2){
+  
+  df = df[df$conditions %in% c(cond_1, cond_2),]
+  so = sleuth_prep(df, ~conditions)
+
+}
+```
+
+
+
+### Function for plotting PCAs
+```{r}
+pca_create = function(so, cond1, cond2){
+  
+  transformed = sleuth::log_transform(sleuth_to_matrix(so, which_df = 'obs_norm',
+                                                                   which_units = 'tpm'), 
+                                                  offset = 0.5) %>%  t()
+  pca_obj = PCA(transformed, graph = FALSE)
+              
+  print(
+        plot.PCA(pca_obj, title = paste(cond1, 'vs', cond2), font.main = 1)
+        )
+              
+  }
+```
+
+
+# LU
+
+### Take the kallisto data for LU
+```{r}
+sample_id_LU = dir(file.path("DE/kallisto_LU"))
+
+dirs_LU <- sapply(sample_id_LU, function(id) file.path('DE/kallisto_LU', id)) #
+cond_LU = rep(c( 'AtF3', 'AtF5', 'AtK3', 'AtK5', 'LMF3', 'LMF5', 'LMK3', 'LMK5'), each = 3)
+
+df_LU = data.frame(sample = sample_id_LU, path = dirs_LU, conditions = cond_LU)
+df_LU = df_LU %>% mutate(conditions = as.factor(conditions))
+```
+
+
+
+### sleuth objects for LU
+```{r warning=F, message=F}
+so_LMK5_vs_LMK3 = so_make(df_LU, 'LMK5', "LMK3")
+so_AtK5_vs_AtK3 = so_make(df_LU, 'AtK5', "AtK3")
+so_AtK3_vs_LMK3 = so_make(df_LU, 'AtK3', "LMK3")
+so_AtK5_vs_LMK5 = so_make(df_LU, 'AtK5', "LMK5")
+
+so_LMF3_vs_LMK3 = so_make(df_LU, 'LMF3', "LMK3")
+so_LMF5_vs_LMK5 = so_make(df_LU, 'LMF5', "LMK5")
+so_AtF3_vs_AtK3 = so_make(df_LU, 'AtF3', "AtK3")
+so_AtF5_vs_AtK5 = so_make(df_LU, 'AtF5', "AtK5")
+
+so_LMF5_vs_LMF3 = so_make(df_LU, 'LMF5', "LMF3")
+so_AtF5_vs_AtF3 = so_make(df_LU, 'AtF5', "AtF3")
+so_AtF3_vs_LMF3 = so_make(df_LU, 'AtF3', "LMF3")
+so_AtF5_vs_LMF5 = so_make(df_LU, 'AtF5', "LMF5")
+```
+
+
+### PCA LU
+```{r, warning=FALSE, message=FALSE}
+pdf('PCA/PCA_for_DE_LU.pdf', width=8)
+
+pca_create(so_LMK5_vs_LMK3, 'LMK5', 'LMK3')
+pca_create(so_AtK5_vs_AtK3, 'AtK5', "AtK3")
+pca_create(so_AtK3_vs_LMK3, 'AtK3', "LMK3")
+pca_create(so_AtK5_vs_LMK5, 'AtK5', "LMK5")
+
+pca_create(so_LMF3_vs_LMK3, 'LMF3', "LMK3")
+pca_create(so_LMF5_vs_LMK5, 'LMF5', "LMK5")
+pca_create(so_AtF3_vs_AtK3, 'AtF3', "AtK3")
+pca_create(so_AtF5_vs_AtK5, 'AtF5', "AtK5")
+
+pca_create(so_LMF5_vs_LMF3, 'LMF5', "LMF3")
+pca_create(so_AtF5_vs_AtF3, 'AtF5', "AtF3")
+pca_create(so_AtF3_vs_LMF3, 'AtF3', "LMF3")
+pca_create(so_AtF5_vs_LMF5, 'AtF5', "LMF5")
+
+dev.off()
+```
+
+
+# FO
+
+### Take the kallisto data for LU
+
+```{r, message=FALSE}
+sample_id_FO = dir(file.path("DE/kallisto_FO_3"))
+
+dirs_FO <- sapply(sample_id_FO, function(id) file.path('DE/kallisto_FO_3', id))
+cond_FO = rep(c( 'AtF3', 'AtF5', 'AtK3', 'AtK5', 'FO', 'LMF3', 'LMF5', 'LMK3', 'LMK5'), each = 3)
+
+df_FO = data.frame(sample = sample_id_FO, path = dirs_FO, conditions = cond_FO)
+df_FO = df_FO %>% mutate(conditions = as.factor(conditions))
+```
+
+
+### sleuth objects for FO
+```{r, warning=FALSE, message=FALSE}
+so_AtF3_vs_FO = so_make(df_FO, 'AtF3', "FO")
+so_AtF5_vs_FO = so_make(df_FO, 'AtF5', "FO")
+so_LMF3_vs_FO = so_make(df_FO, 'LMF3', "FO")
+so_LMF5_vs_FO = so_make(df_FO, 'LMF5', "FO")
+```
+
+
+### PCA FO
+```{r, warning=FALSE, message=FALSE}
+pdf('PCA/PCA_for_DE_FO.pdf', width=8)
+
+pca_create(so_AtF3_vs_FO, 'AtF3', "FO")
+pca_create(so_AtF5_vs_FO, 'AtF5', "FO")
+pca_create(so_LMF3_vs_FO, 'LMF3', "FO")
+pca_create(so_LMF5_vs_FO, 'LMF5', "FO")
+
+dev.off()
+```
+

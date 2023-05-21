@@ -1,0 +1,183 @@
+---
+title: "heatmaps"
+output: html_document
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(pheatmap)
+library(gplots)
+```
+
+# Function to create Heatmap
+
+```{r}
+hm_fun = function(ovlps_annots, titl){
+  
+  v_hm_ann = ovlps_annots[lapply(ovlps_annots, length) > 0]
+  
+  HM_annots = lapply(v_hm_ann, dplyr::select, description, adjp)
+  
+  descs = lapply(HM_annots, select , description) %>% reduce(rbind) %>%  unique()
+  
+  contrasts = names(HM_annots)
+  
+  df_hm = reduce(HM_annots, full_join, by='description') 
+  colnames(df_hm) = c('description', contrasts) 
+  descriptions = df_hm$description
+  df_hm = df_hm[,-1]
+  rownames(df_hm) = descriptions
+  
+  
+  df_hm_1 = apply(df_hm, 2, function(x){-log10(x)}) %>% as.data.frame()
+  
+  df_hm_2 = df_hm_1 %>%  dplyr::mutate_all(~replace(., is.na(.), 0.01))
+  
+  print(
+  pheatmap(df_hm_2, cluster_rows = T, cluster_cols = T, 
+           legend_breaks = c(0.01, max(df_hm_2)),
+           
+           legend_labels = c(
+             round(min(df_hm_1, na.rm = T), 3),
+                            round(max(df_hm_2), 3)),
+           
+           color = c('black', colorRampPalette(c('lightblue', 'firebrick'))(1000)), 
+           display_numbers = F, 
+           main = titl,
+           fontsize_row = 8,
+           fontsize_col = 12,
+           border_color = 'black')
+  )
+}
+```
+
+# Download variables
+
+```{r}
+v_sigs = readRDS('RDS_files/v_sigs.rds')
+v_sigs_fo = readRDS('RDS_files/v_sigs_fo.rds')
+v_reactomes = readRDS('RDS_files/v_reactomes.rds')
+annots_ovlps_CpG_GO = readRDS('RDS_files/annots_ovlps_CpG_GO.rds')
+annots_ovlps_CpG_reactome = readRDS('RDS_files/annots_ovlps_CpG_reactome.rds')
+cpg_annots = readRDS('RDS_files/cpg_annots.rds')
+```
+
+
+# FO
+
+```{r}
+pdf('Heatmaps/DE_001/hm_DE_GO_FO.pdf',width = 7, height = 6)
+hm_fun(v_annots_fo[1:2], 'DE GO Fusarium annotations')
+dev.off()
+```
+
+# Common  genes
+
+
+```{r}
+pdf('Heatmaps/common_genes_001/hm_common_genes_GO.pdf',width = 10, height = 8)
+hm_fun(annots_ovlps_CpG_GO, 'DMR AND DE common genes GO annotations')
+dev.off()
+
+pdf('Heatmaps/common_genes_001/hm_common_genes_reactome.pdf',width = 8, height = 6)
+hm_fun(annots_ovlps_CpG_reactome, 'DMR AND DE common genes Reactome annotations')
+dev.off()
+
+```
+
+# LM98
+
+## DE
+
+```{r}
+pdf('Heatmaps/DE_001/hm_DE_GO_LU_LM98.pdf',width = 12, height = 8)
+hm_fun(
+  v_annots[c('LMF5_vs_LMK5', 'LMF3_vs_LMK3', 'LMK5_vs_LMK3', 'LMF5_vs_LMF3')],
+       'DE GO LM98  annotations')
+dev.off()
+
+pdf('Heatmaps/DE_001/hm_DE_reactome_LU_LM98.pdf',width = 8, height = 6)
+hm_fun(v_reactomes[c('LMF5_vs_LMK5', 'LMF3_vs_LMK3', 'LMK5_vs_LMK3', 'LMF5_vs_LMF3')], 
+       'DE Reactome LM98  annotations')
+dev.off()
+```
+
+# DMR
+
+```{r}
+
+pdf('Heatmaps/DMR_001/hm_DMR_GO_LU_LM98.pdf',width = 6, height = 4)
+hm_fun(cpg_annots$go_annot[c('LMF5_vs_LMK5', 'LMF3_vs_LMK3', 'LMK5_vs_LMK3', 'LMF5_vs_LMF3')], 'DMR GO LM98  annotations')
+dev.off()
+
+```
+
+
+# Atalante
+
+## DE
+
+```{r}
+pdf('Heatmaps/DE_001/hm_DE_GO_LU_Atalante.pdf',width = 10, height = 11)
+hm_fun(
+  v_annots[c('AtF5_vs_AtK5', 'AtF3_vs_AtK3', 'AtK5_vs_AtK3', 'AtF5_vs_AtF3')],
+       'DE GO Atalante annotations')
+dev.off()
+
+pdf('Heatmaps/DE_001/hm_DE_reactome_LU_Atalante.pdf',width = 8, height = 7)
+hm_fun(v_reactomes[c('AtF5_vs_AtK5', 'AtF3_vs_AtK3', 'AtK5_vs_AtK3', 'AtF5_vs_AtF3')], 
+       'DE Reactome Atalante annotations')
+dev.off()
+```
+## DMR
+
+```{r}
+
+pdf('Heatmaps/DMR_001/hm_DMR_GO_LU_Atalante.pdf',width = 9, height = 6)
+hm_fun(cpg_annots$go_annot[c('AtF5_vs_AtK5', 'AtF3_vs_AtK3', 'AtK5_vs_AtK3', 'AtF5_vs_AtF3')], 'DMR GO Atalante annotations')
+dev.off()
+
+pdf('Heatmaps/DMR_001/hm_DMR_reactome_LU_Atalante.pdf',width = 7, height = 5)
+hm_fun(cpg_annots$react_annot[c('AtF5_vs_AtK5', 'AtF3_vs_AtK3', 'AtK5_vs_AtK3', 'AtF5_vs_AtF3')], 'DMR reactome Atalante annotations')
+dev.off()
+
+```
+
+
+# BETWEEN species
+
+## DE
+
+```{r}
+pdf('Heatmaps/DE_001/hm_DE_GO_LU_BETWEEN_species.pdf',width = 12, height = 10)
+hm_fun(
+  v_annots[c('AtF5_vs_LMF5', 'AtF3_vs_LMF3', 'AtK5_vs_LMK5', 'AtK3_vs_LMK3')],
+       'DE GO BETWEEN species annotations')
+dev.off()
+
+pdf('Heatmaps/DE_001/hm_DE_reactome_LU_BETWEEN_species.pdf',width = 8, height = 8)
+hm_fun(v_reactomes[c('AtF5_vs_LMF5', 'AtF3_vs_LMF3', 'AtK5_vs_LMK5', 'AtK3_vs_LMK3')], 
+       'DE Reactome BETWEEN species annotations')
+dev.off()
+```
+
+## DMR
+
+```{r}
+pdf('Heatmaps/DMR_001/hm_DMR_GO_LU_BETWEEN_species.pdf',width = 9, height = 6)
+hm_fun(cpg_annots$go_annot[c('AtF5_vs_LMF5', 'AtF3_vs_LMF3', 'AtK5_vs_LMK5', 'AtK3_vs_LMK3')], 'DMR GO BETWEEN species annotations')
+dev.off()
+
+pdf('Heatmaps/DMR_001/hm_DMR_reactome_LU_BETWEEN_species.pdf',width = 7, height = 5)
+hm_fun(cpg_annots$react_annot[c('AtF5_vs_LMF5', 'AtF3_vs_LMF3', 'AtK5_vs_LMK5', 'AtK3_vs_LMK3')], 'DMR reactome BETWEEN species annotations')
+dev.off()
+
+```
+
+
+

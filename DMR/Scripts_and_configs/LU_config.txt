@@ -1,0 +1,4 @@
+../OUT_LU_test	#output_dir
+../bed_files/genes.bed.gz	#bed_file
+flax_v2	#assembly_name
+../Annotation_tables/Lu_2_go.xlsx	#Go_annotation_file

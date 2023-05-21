@@ -1,0 +1,5 @@
+AtF3	AtF3-1	1	../test_data/MAtF3-1.txt.gz
+AtF3	AtF3-2	1	../test_data/MAtF3-2.txt.gz
+AtF3	AtF3-3	1	../test_data/MAtF3-3.txt.gz
+LMF3	LMF3-1	0	../test_data/MLMF3-1.txt.gz
+LMF3	LMF3-2	0	../test_data/MLMF3-2.txt.gz

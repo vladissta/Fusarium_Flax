@@ -1,0 +1,258 @@
+---
+title: "DE_pipeline_FO"
+output: pdf_document
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include = FALSE}
+# knitr::opts_chunk$set(eval = TRUE)
+```
+
+```{r message=FALSE, warning=FALSE}
+require(sleuth)
+require(ggvenn)
+require(tidyverse)
+require(XGR)
+require(RVenn)
+```
+
+# Load the data
+
+```{r, warning=F}
+dir.create('DE/OUT_FO/')
+```
+
+
+```{r, echo=TRUE}
+sample_id_FO = dir(file.path("DE/kallisto_FO_3"))
+
+dirs_FO <- sapply(sample_id_FO, function(id) file.path('DE/kallisto_FO_3', id))
+cond_FO = rep(c( 'AtF3', 'AtF5', 'AtK3', 'AtK5', 'FO', 'LMF3', 'LMF5', 'LMK3', 'LMK5'), each = 3)
+
+df_FO = data.frame(sample = sample_id_FO, path = dirs_FO, conditions = cond_FO)
+df_FO = df_FO %>% mutate(conditions = as.factor(conditions))
+```
+
+### Function to calculate DE and return table of statistics for each gene
+
+```{r, echo=T}
+difexpr = function(df, cond_1, cond_2){
+  
+  df = df[df$conditions %in% c(cond_1, cond_2),]
+  
+  so= sleuth_prep(df, extra_bootstrap_summary = T, read_bootstrap_tpm = TRUE, ~conditions)
+  so = sleuth_fit(so, ~conditions, 'full')
+  so = sleuth_fit(so, ~1, 'reduced')
+  so = sleuth_lrt(so, 'reduced', 'full')
+  
+  lfc<- kallisto_table(so) %>%
+    group_by(target_id, conditions) %>%
+    summarize(mean_ct=mean(est_counts)) %>%
+    group_by(target_id) %>% 
+    summarise(lFC = log2((mean_ct[conditions==cond_1]+0.01)/(mean_ct[conditions==cond_2]+0.01)))
+  
+  sleuth_table <- sleuth_results(so, test = "reduced:full",test_type = 'lrt')
+  sleuth_table = merge(sleuth_table, lfc, by = 'target_id')
+  
+  return(sleuth_table)
+}
+```
+
+## Tables of DE
+
+```{r message=FALSE, warning=FALSE}
+
+tab_LMF3_vs_FO = difexpr(df_FO, 'LMF3', 'FO') 
+tab_LMF5_vs_FO = difexpr(df_FO, 'LMF5', 'FO')
+tab_AtF3_vs_FO = difexpr(df_FO, 'AtF3', 'FO')
+tab_AtF5_vs_FO = difexpr(df_FO, 'AtF5', 'FO')
+
+```
+
+### Function to filter Significant DE genes
+
+```{r}
+sig = function(tab,q, lfc){
+  t = tab %>% filter(qval <= q, abs(lFC) >= lfc) %>% arrange(qval)
+  return(t)}
+```
+
+## Filtering
+
+```{r}
+sig_LMF3_vs_FO = sig(tab_LMF3_vs_FO, 0.05, 2)
+sig_LMF5_vs_FO = sig(tab_LMF5_vs_FO, 0.05, 2)
+sig_AtF3_vs_FO = sig(tab_AtF3_vs_FO, 0.05, 2)
+sig_AtF5_vs_FO = sig(tab_AtF5_vs_FO, 0.05, 2)
+```
+
+### Up- and Downregulated genes filtering
+
+```{r}
+sig_LMF3_vs_FO_up = sig_LMF3_vs_FO %>% filter(lFC >= 2)
+sig_LMF5_vs_FO_up = sig_LMF5_vs_FO %>% filter(lFC >= 2)
+sig_AtF3_vs_FO_up = sig_AtF3_vs_FO %>% filter(lFC >= 2)
+sig_AtF5_vs_FO_up = sig_AtF5_vs_FO %>% filter(lFC >= 2)
+
+
+sig_LMF3_vs_FO_down = sig_LMF3_vs_FO %>% filter(lFC <= -2)
+sig_LMF5_vs_FO_down = sig_LMF5_vs_FO %>% filter(lFC <= -2)
+sig_AtF3_vs_FO_down = sig_AtF3_vs_FO %>% filter(lFC <= -2)
+sig_AtF5_vs_FO_down = sig_AtF5_vs_FO %>% filter(lFC <= -2)
+
+```
+
+### Loading the annotation table. Gene Ontology
+
+```{r}
+go_fo = read.delim('Annotation_tables/F39.protein2go.dat', col.names = c('target_id', 'description')) %>% separate('description', into = c('description', 'id'), sep = ';') %>% select(-id)
+```
+
+### Annotation function
+
+```{r}
+
+annot_fo = function(sig, title, annotation_table){
+  
+  signames = as.data.frame(sig[1])
+  
+  xsig = xEnricherYours(signames, annotation_table, 
+                        size.range=c(10,2000),
+                        min.overlap = 3,
+                        test = "hypergeo",
+                        p.adjust.method = 'BH', silent = T)
+
+  table_sig <-  xEnrichViewer(xsig, sortBy = 'adjp', 
+                               top_num = nrow(xsig$term_info))
+  
+  if(!is.null(table_sig)){
+    table_sig <- table_sig %>% filter(adjp<0.01) %>% rename(description = name)
+    
+    rownames(table_sig) = NULL
+    plot(xEnrichBarplot(xsig, displayBy = 'fdr', 
+                        FDR.cutoff = 0.01, font.family = 'Times',
+                        bar.label.size = 5, 
+                        top_num = 10, bar.width = .8) + ggtitle(title)) 
+  }
+  return(as.data.frame(table_sig))
+}
+
+```
+
+## Annotating
+
+```{r, warning=F}
+dir.create('DE/OUT_FO/OUT_Annot/')
+```
+
+
+```{r}
+# fig.height=6, fig.width=12}
+pdf('./DE/OUT_FO/OUT_Annot/Barplots.pdf', width = 12, family = "Times")
+annot_LMF3_vs_FO = annot_fo(sig_LMF3_vs_FO, 'LMF3_vs_FO ALL', go_fo)
+annot_LMF5_vs_FO = annot_fo(sig_LMF5_vs_FO, 'LMF5_vs_FO ALL', go_fo)
+annot_AtF3_vs_FO = annot_fo(sig_AtF3_vs_FO, 'AtF3_vs_FO ALL', go_fo) 
+annot_AtF5_vs_FO = annot_fo(sig_AtF5_vs_FO, 'AtF5_vs_FO ALL', go_fo) 
+
+annot_LMF3_vs_FO_up = annot_fo(sig_LMF3_vs_FO_up, 'LMF3_vs_FO Upregulated', go_fo)
+annot_LMF5_vs_FO_up = annot_fo(sig_LMF5_vs_FO_up, 'LMF5_vs_FO Upregulated', go_fo)
+annot_AtF3_vs_FO_up = annot_fo(sig_AtF3_vs_FO_up, 'AtF3_vs_FO Upregulated', go_fo) 
+annot_AtF5_vs_FO_up = annot_fo(sig_AtF5_vs_FO_up, 'AtF5_vs_FO Upregulated', go_fo) 
+
+annot_LMF3_vs_FO_down = annot_fo(sig_LMF3_vs_FO_down, 'LMF3_vs_FO Downregulated', go_fo)
+annot_LMF5_vs_FO_down = annot_fo(sig_LMF5_vs_FO_down, 'LMF5_vs_FO Downregulated', go_fo)
+annot_AtF3_vs_FO_down = annot_fo(sig_AtF3_vs_FO_down, 'AtF3_vs_FO Downregulated', go_fo) 
+annot_AtF5_vs_FO_down = annot_fo(sig_AtF5_vs_FO_down, 'AtF5_vs_FO Downregulated', go_fo) 
+
+dev.off()
+```
+
+## Making some lists
+
+```{r}
+v_annots_fo = list(annot_AtF3_vs_FO, annot_AtF5_vs_FO, annot_LMF3_vs_FO, annot_LMF5_vs_FO)
+v_sigs_fo = list(sig_AtF3_vs_FO, sig_AtF5_vs_FO, sig_LMF3_vs_FO, sig_LMF5_vs_FO)
+titles_fo = c('AtF3_vs_FO', 'AtF5_vs_FO', 'LMF3_vs_FO', 'LMF5_vs_FO')
+
+names(v_annots_fo) = titles_fo
+names(v_sigs_fo) = titles_fo
+```
+
+### RDS
+
+```{r}
+saveRDS(v_sigs_fo, 'RDS_files/v_sigs_fo.rds')
+saveRDS(v_annots_fo, 'RDS_files/v_annots_fo.rds')
+```
+
+
+### Writing Tables function
+
+```{r}
+write_tables_fo = function(table, step, title, regulation=NULL){
+  if (step == 'DE'){
+    divider = '_vs_FO_DE_'
+  } else if(step == 'Annot'){
+    divider = '_vs_FO_GO_'
+  } else{
+   divider = '_vs_FO_all_genes'
+  }
+  
+  writexl::write_xlsx(table, path = file.path('DE/OUT_FO/', 
+                                              paste('OUT_', step, sep=''),
+                                              paste(title, divider, regulation, '.xlsx', sep='')))
+}
+```
+
+```{r, warning=F}
+dir.create('DE/OUT_FO/OUT_all/')
+dir.create('DE/OUT_FO/OUT_DE/')
+```
+
+# Tables .xlsx
+
+```{r}
+write_tables_fo(tab_AtF3_vs_FO, 'all', 'AtF3')
+write_tables_fo(tab_AtF5_vs_FO, 'all', 'AtF5')
+write_tables_fo(tab_LMF3_vs_FO, 'all', 'LMF3')
+write_tables_fo(tab_LMF5_vs_FO, 'all', 'LMF5')
+```
+
+```{r}
+write_tables_fo(sig_AtF3_vs_FO, 'DE', 'AtF3', 'ALL')
+write_tables_fo(sig_AtF5_vs_FO, 'DE', 'AtF5', 'ALL')
+write_tables_fo(sig_LMF3_vs_FO, 'DE', 'LMF3', 'ALL')
+write_tables_fo(sig_LMF5_vs_FO, 'DE', 'LMF5', 'ALL')
+```
+
+```{r}
+write_tables_fo(sig_AtF3_vs_FO_up, 'DE', 'AtF3', 'Upregultaed')
+write_tables_fo(sig_AtF5_vs_FO_up, 'DE', 'AtF5', 'Upregultaed')
+write_tables_fo(sig_LMF3_vs_FO_up, 'DE', 'LMF3', 'Upregultaed')
+write_tables_fo(sig_LMF5_vs_FO_up, 'DE', 'LMF5', 'Upregultaed')
+
+write_tables_fo(sig_AtF3_vs_FO_down, 'DE', 'AtF3', 'Downregultaed')
+write_tables_fo(sig_AtF5_vs_FO_down, 'DE', 'AtF5', 'Downregultaed')
+write_tables_fo(sig_LMF3_vs_FO_down, 'DE', 'LMF3', 'Downregultaed')
+write_tables_fo(sig_LMF5_vs_FO_down, 'DE', 'LMF5', 'Downregultaed')
+```
+
+```{r}
+write_tables_fo(annot_AtF3_vs_FO, 'Annot', 'AtF3', 'ALL')
+write_tables_fo(annot_AtF5_vs_FO, 'Annot', 'AtF5', 'ALL')
+write_tables_fo(annot_LMF3_vs_FO, 'Annot', 'LMF3', 'ALL')
+write_tables_fo(annot_LMF5_vs_FO, 'Annot', 'LMF5', 'ALL')
+```
+
+```{r}
+write_tables_fo(annot_AtF3_vs_FO_up, 'Annot', 'AtF3', 'Upregultaed')
+write_tables_fo(annot_AtF5_vs_FO_up, 'Annot', 'AtF5', 'Upregultaed')
+write_tables_fo(annot_LMF3_vs_FO_up, 'Annot', 'LMF3', 'Upregultaed')
+write_tables_fo(annot_LMF5_vs_FO_up, 'Annot', 'LMF5', 'Upregultaed')
+
+write_tables_fo(annot_AtF3_vs_FO_down, 'Annot', 'AtF3', 'Downregultaed')
+write_tables_fo(annot_AtF5_vs_FO_down, 'Annot', 'AtF5', 'Downregultaed')
+write_tables_fo(annot_LMF3_vs_FO_down, 'Annot', 'LMF3', 'Downregultaed')
+write_tables_fo(annot_LMF5_vs_FO_down, 'Annot', 'LMF5', 'Downregultaed')
+```
+
