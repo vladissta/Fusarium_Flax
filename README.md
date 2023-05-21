@@ -36,7 +36,8 @@ Reads were were aligned on reference genomes – MI39 isolate for fungus and fla
 Aligning reads and abundances quantification of **transcripts** were obtained by processing RNA-seq data with [Kallisto](https://github.com/pachterlab/kallisto).
 Aligning of reads and identification of **methylation** positions and context (CpG, CHG, CHH, where H = A/C/T) were obtained by processing BS-seq data with [Bismark](https://github.com/FelixKrueger/Bismark).
 **Quality control and filtering** were complete with [sleuth](https://github.com/pachterlab/sleuth) and [methylKit](https://github.com/al2na/methylKit) R packages for transcriptome and methylome data respectively.
-Transcripts and methylation regions were **filtered** by number of cytosines and coverage.  
+Transcripts and methylation regions were **filtered** by number of cytosines and coverage - minimal coverage 5 (at least in half samples) for RNA-seq data and 10 for BS-seq data (default settings)
+ 
 
 We **planned** to analyze 12 flax and 4 FOILINI comparisons between different experimental conditions in differential expression and differential methylation analyses.
 
@@ -100,6 +101,39 @@ We **planned** to analyze 12 flax and 4 FOILINI comparisons between different ex
 
 **Initial analysis** consisted of checking of principal components, hierarchical clustering and correlation between samples. The determination of **DE genes (DEG)** was performed with the sleuth R package using **adjusted p-value** (Benjamini-Hochberg) and **logarithm of fold change **as thresholds. DMR were obtained by utilizing methylKit R package using **adjusted p-value** (Benjamini-Hochberg) and **methylation percentage difference**.  
 ***Integrative analysis***: we intersected the coordinates of DMRs and genes and obtained a list of **genes that were presumably regulated by methylation** (common genes). All three lists of genes (DE, DM, common) were **enriched** by Gene Ontology and Plant reactome **terms** using [XGR](https://xgr.r-forge.r-project.org/) R package
+
+#### Thresholds
+
+<table>
+<thead>
+  <tr>
+    <th> </th>
+    <th>Dif.expression</th>
+    <th>Dif.methylation</th>
+    <th>Enrichment</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td>Adjusted p-value</td>
+    <td>0.01</td>
+    <td>0.01</td>
+    <td>0.01</td>
+  </tr>
+  <tr>
+    <td>Difference between samples</td>
+    <td>1.25 (logarithmic)</td>
+    <td>25 %</td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td>Min. number of genes with a term</td>
+    <td>-</td>
+    <td>-</td>
+    <td>3</td>
+  </tr>
+</tbody>
+</table>
 
 ## Results
 ### Differential methylation
