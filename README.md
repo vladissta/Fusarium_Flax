@@ -1,7 +1,7 @@
 ![R](https://img.shields.io/badge/>=4.1.2-blue?style=for-the-badge&logo=r)
 ![bash](https://img.shields.io/badge/Bash-black?style=for-the-badge&logo=gnu-bash)
 
-# Host-parasite interaction in Fusarium infection of flax
+# Host-pathogen interaction in Fusarium infection of flax
 
 **NB!** We did not uploaded part of our data, because it will be used in our future work and published later as a part of article.
 
