@@ -23,7 +23,7 @@ Pipelines (*Rmarkdown files*) containing statistical calculation of differential
 - **kallisto_FO** - output obtained after processing ***Fusarium*** RNA-seq data with kallisto tool
 - **kallisto_LU** - output obtained after processing ***Flax*** RNA-seq data with kallisto tool
 
-Example of how did kallisto otput looked like: [kallisto data example](https://www.dropbox.com/scl/fo/uvlf81h93luk3s1svun75/h?dl=0&rlkey=nxc7ajleurvlls6qfkvh9l0ag)
+Example of kallisto output data could be downloaded here: [kallisto data example](https://www.dropbox.com/scl/fo/uvlf81h93luk3s1svun75/h?dl=0&rlkey=nxc7ajleurvlls6qfkvh9l0ag)
 
 #### Output directories
 
@@ -32,6 +32,7 @@ These directories are created automatically during the execution of pipeline
 - **OUT_FO** - output from execution of **DE\_pipeline\_FO.Rmd**
 - **OUT_LU** - output from execution of **DE\_pipeline\_LU.Rmd**
 
+Example of pipelines output data could be downloaded here: [kallisto data example](https://www.dropbox.com/scl/fo/uvlf81h93luk3s1svun75/h?dl=0&rlkey=nxc7ajleurvlls6qfkvh9l0ag)
 
 ## How to use
 
