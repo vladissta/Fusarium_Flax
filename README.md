@@ -99,7 +99,7 @@ We **planned** to analyze 12 flax and 4 FOILINI comparisons between different ex
 </tbody>
 </table>
 
-**Initial analysis** consisted of checking of principal components, hierarchical clustering and correlation between samples. The determination of **DE genes (DEG)** was performed with the sleuth R package using **adjusted p-value** (Benjamini-Hochberg) and **logarithm of fold change **as thresholds. DMR were obtained by utilizing methylKit R package using **adjusted p-value** (Benjamini-Hochberg) and **methylation percentage difference**.  
+**Initial analysis** consisted of checking of principal components, hierarchical clustering and correlation between samples. The determination of **DE genes (DEG)** was performed with the sleuth R package using **adjusted p-value** (Benjamini-Hochberg) and **logarithm of fold change** as thresholds. DMR were obtained by utilizing methylKit R package using **adjusted p-value** (Benjamini-Hochberg) and **methylation percentage difference**.  
 ***Integrative analysis***: we intersected the coordinates of DMRs and genes and obtained a list of **genes that were presumably regulated by methylation** (common genes). All three lists of genes (DE, DM, common) were **enriched** by Gene Ontology and Plant reactome **terms** using [XGR](https://xgr.r-forge.r-project.org/) R package
 
 #### Thresholds
